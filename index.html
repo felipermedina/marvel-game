@@ -1,0 +1,529 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Batalha Marvel 1x1</title>
+ <style>
+  * {
+    box-sizing: border-box;
+  }
+
+  body {
+    font-family: Arial, sans-serif;
+    background-color: #1a1a1a;
+    text-align: center;
+    padding: 10px;
+    color: #f0f0f0;
+    margin: 0;
+  }
+
+  h1, h2, h3 {
+    color: #FFD700;
+  }
+
+  .pokemon-container {
+    display: flex;
+    justify-content: center;
+    flex-wrap: wrap;
+    gap: 12px;
+    margin-top: 20px;
+  }
+
+  .pokemon-card {
+    border: 2px solid #444;
+    border-radius: 12px;
+    padding: 8px;
+    width: 45%;
+    max-width: 165px;
+    background-color: #111;
+    cursor: pointer;
+    transition: transform 0.2s;
+    position: relative;
+  }
+
+  .pokemon-card:hover {
+    transform: scale(1.05);
+    border-color: red;
+  }
+
+  .pokemon-card img {
+    width: 100%;
+    height: auto;
+    border-radius: 8px;
+  }
+
+  .selected {
+    border-color: #FFD700;
+  }
+
+  #start-battle {
+    margin-top: 20px;
+    padding: 15px 25px;
+    font-size: 16px;
+    cursor: pointer;
+    background-color: red;
+    color: white;
+    border: none;
+    border-radius: 5px;
+  }
+
+  #battle-screen {
+    display: none;
+  }
+
+  .battle-field {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    align-items: center;
+    margin-top: 30px;
+    gap: 20px;
+  }
+
+  .status-bar {
+    margin-top: 10px;
+    font-weight: bold;
+  }
+
+  .hp-bar {
+    width: 100px;
+    height: 10px;
+    background: red;
+    margin: auto;
+    border: 1px solid #FFD700;
+  }
+
+  .attack-buttons {
+    margin-top: 30px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    padding: 0 10px;
+  }
+
+  .attack-buttons button {
+    padding: 10px;
+    cursor: pointer;
+    background-color: #FFD700;
+    border: none;
+    border-radius: 5px;
+    color: black;
+    font-size: 14px;
+  }
+
+  .dano {
+    position: absolute;
+    font-size: 28px;
+    font-weight: bold;
+    color: red;
+    text-shadow: 2px 2px 6px black;
+    animation: danoAnim 1.5s ease-out forwards;
+    pointer-events: none;
+    z-index: 999;
+    left: 50%;
+    top: 10px;
+    transform: translateX(-50%);
+  }
+
+  @keyframes danoAnim {
+    0% {
+      opacity: 1;
+      transform: translateY(0) scale(1.3);
+    }
+    50% {
+      transform: translateY(-30px) scale(1.5);
+    }
+    100% {
+      opacity: 0;
+      transform: translateY(-60px) scale(1);
+    }
+  }
+
+  /* Responsividade para telas pequenas */
+  @media (max-width: 600px) {
+    .pokemon-card {
+      width: 45%;
+    }
+
+    .battle-field img {
+      width: 90px;
+      height: auto;
+    }
+
+    .attack-buttons button {
+      font-size: 13px;
+      padding: 8px;
+    }
+  }
+</style>
+
+</head>
+<body>
+  <h1>Jogo de Heróis 1x1</h1>
+  <h2>Jogador 1, escolha seu herói</h2>
+  <div class="pokemon-container" id="selection-area"></div>
+  <button id="start-battle" disabled>Iniciar Batalha</button>
+
+  <div id="battle-screen">
+    <h2>Batalha Marvel 1x1</h2>
+    <div class="battle-field">
+      <div id="player1-card" style="position: relative;">
+        <h3 id="player1-name"></h3>
+        <img id="player1-img" src="" alt="" width="100" height="100" />
+        <div class="hp-bar" id="player1-hp-bar"></div>
+        <div class="status-bar" id="player1-hp-text"></div>
+      </div>
+      <div id="player2-card" style="position: relative;">
+        <h3 id="player2-name"></h3>
+        <img id="player2-img" src="" alt="" width="100" height="100" />
+        <div class="hp-bar" id="player2-hp-bar"></div>
+        <div class="status-bar" id="player2-hp-text"></div>
+      </div>
+    </div>
+    <div class="attack-buttons" id="attack-buttons"></div>
+  </div>
+
+  <script>
+    const heroes = [
+      {
+        nome: "Homem de Ferro",
+        imagem: "images/ironman.jpeg",
+        hp: 650,
+        ataques: [
+          { nome: "Rajada Repulsora", dano: 25 },
+          { nome: "Mísseis Inteligentes", dano: 20 }
+        ]
+      },
+      {
+        nome: "Venom",
+        imagem: "images/venom.jpeg",
+        hp: 750,
+        ataques: [
+          { nome: "Lamina simbionte", dano: 35 },
+          { nome: "Mordida", dano: 20 }
+        ]
+      },
+      {
+        nome: "Blob",
+        imagem: "images/blob.jpeg",
+        hp: 800,
+        ataques: [
+          { nome: "Barrigada", dano: 35 },
+          { nome: "Soco", dano: 20 }
+        ]
+      },
+      {
+        nome: "Cyclope",
+        imagem: "images/cyclope.jpeg",
+        hp: 400,
+        ataques: [
+          { nome: "Laser Óptico", dano: 45 }
+        ]
+      },
+      {
+        nome: "Visão",
+        imagem: "images/visao.jpeg",
+        hp: 750,
+        ataques: [
+          { nome: "Raio Laser", dano: 35 },
+          { nome: "Super Soco", dano: 20 }
+        ]
+      },
+      {
+        nome: "Skaar",
+        imagem: "images/skar.jpeg",
+        hp: 800,
+        ataques: [
+          { nome: "Terremoto", dano: 35 },
+          { nome: "Mega Soco", dano: 40 }
+        ]
+      },
+      {
+        nome: "Capitão América",
+        imagem: "images/captao.jpeg",
+        hp: 500,
+        ataques: [
+          { nome: "Lançar Escudo", dano: 22 },
+          { nome: "Soco Poderoso", dano: 18 }
+        ]
+      },
+      {
+        nome: "Luke Cage",
+        imagem: "images/luke.jpeg",
+        hp: 800,
+        ataques: [
+          { nome: "Chute Poderoso", dano: 22 },
+          { nome: "Soco Poderoso", dano: 18 }
+        ]
+      },
+      {
+        nome: "Mercúrio",
+        imagem: "images/mercurio.jpeg",
+        hp: 300,
+        ataques: [
+          { nome: "Multi Soco", dano: 28 },
+          { nome: "Ataque Rápido", dano: 30 }
+        ]
+      },
+      
+      {
+        nome: "Homem-Aranha",
+        imagem: "images/spiderman.jpeg",
+        hp: 500,
+        ataques: [
+          { nome: "Teia Veloz", dano: 20 },
+          { nome: "Chute Giratório", dano: 15 }
+        ]
+      },
+
+       {
+        nome: "Wolwerine",
+        imagem: "images/wolwerine.jpeg",
+        hp: 640,
+        ataques: [
+          { nome: "garras", dano: 35 },
+          { nome: "golpes perfurantes", dano: 40 }
+        ]
+       },
+        {
+        nome: "Fera",
+        imagem: "images/fera.jpeg",
+        hp: 638,
+        ataques: [
+          { nome: "garras", dano: 30 },
+          { nome: "pancadas violentas", dano: 35 }
+        ]
+        },
+         {
+        nome: "Hulkbuster",
+        imagem: "images/hulkbuster.jpeg",
+        hp: 700,
+        ataques: [
+          { nome: "rajadas", dano: 35 },
+          { nome: "super soco", dano: 28 },
+          { nome: "mísseis", dano: 30}
+        ]
+        },
+          {
+        nome: "Treinador",
+        imagem: "images/treinador.jpeg",
+        hp: 590,
+        ataques: [
+          { nome: "espadada", dano: 25 },
+          { nome: "escudada", dano: 28 },
+          { nome: "copiar ataque", dano: 30},
+          { nome: "flechada", dano: 22},
+        ]
+        },
+         {
+        nome: "Enxame",
+        imagem: "images/enxame.jpeg",
+        hp: 450,
+        ataques: [
+          { nome: "chuva de abelhas", dano: 30 },
+          { nome: "soco de abelhas", dano: 25 },
+        ]
+        },
+         {
+        nome: "Ms. Marvel",
+        imagem: "images/ms.marvel.jpeg",
+        hp: 460,
+        ataques: [
+          { nome: "apertar o oponente", dano: 27 },
+          { nome: "soco gigante", dano: 27 },
+        ]
+        },
+           {
+        nome: "Homem de Gelo",
+        imagem: "images/homemgelo.jpeg",
+        hp: 545,
+        ataques: [
+          { nome: "congelar", dano: 25 },
+          { nome: "rajada de gelo", dano: 30 },
+          { nome: "espinhos de gelo", dano: 33},
+        ]
+        },
+       {
+        nome: "Homem aranha 2099",
+        imagem: "images/spider.2099.jpeg",
+        hp: 680,
+        ataques: [
+          { nome: "tiro de teia", dano: 20 },
+          { nome: "veneno", dano: 32 },
+          { nome: "ataque de garras", dano: 35},
+          { nome: "ataque veloz", dano: 28},
+        ]
+        },
+              {
+        nome: "Porco Aranha",
+        imagem: "images/aranhaham.jpeg",
+        hp: 670,
+        ataques: [
+          { nome: "tiro de teia", dano: 20 },
+          { nome: "sentido aranha", dano: 25 },
+          { nome: "toon force", dano: 40},
+        ]
+        },
+                    {
+        nome: "Galactus",
+        imagem: "images/galactus.jpeg",
+        hp: 800,
+        ataques: [
+          { nome: "raio galáctico", dano: 42 },
+          { nome: "buraco negro", dano: 50 },
+          { nome: "soco sísmico", dano: 25},
+          { nome: "chute meteoro", dano: 30},
+        ]
+        },
+                            {
+        nome: "Surfista Prateado",
+        imagem: "images/surfista.jpeg",
+        hp: 715,
+        ataques: [
+          { nome: "surfe cortante", dano: 35 },
+          { nome: "raio cósmico", dano: 40 },
+          { nome: "tempestade galáctica", dano: 30},
+          { nome: "explosão estelar", dano: 38},
+        ]
+        },
+                             {
+        nome: "Capitã Marvel",
+        imagem: "images/capmarvel.jpeg",
+        hp: 710,
+        ataques: [
+          { nome: "soco cósmico", dano: 31 },
+          { nome: "explosão binária", dano: 48 },
+          { nome: "rajada de fótons", dano: 34},
+          { nome: "carga supersônica", dano: 35},
+        ]
+        },
+      {
+        nome: "Gorr",
+        imagem: "images/gorr.jpeg",
+        hp: 695,
+        ataques: [
+          { nome: "corte sombrio", dano: 38 },
+          { nome: "chicote das trevas", dano: 30 },
+          { nome: "chuva negra dos deuses", dano: 45},
+          { nome: "golpe devastdor", dano: 29},
+        ]
+        },
+                                {
+        nome: "Homem Formiga",
+        imagem: "images/antman.jpeg",
+        hp: 515,
+        ataques: [
+          { nome: "soco inesperado", dano: 15 },
+          { nome: "investida gigante", dano: 28 },
+          { nome: "formiga artilharia", dano: 32},
+          { nome: "golpe crescente", dano: 30},
+        ]
+        }
+    ];
+
+    const selectionArea = document.getElementById("selection-area");
+    const startBattleBtn = document.getElementById("start-battle");
+    const battleScreen = document.getElementById("battle-screen");
+
+    let selected = [];
+    let vez = 1;
+
+    function renderHeroSelection() {
+      heroes.forEach(hero => {
+        const card = document.createElement("div");
+        card.className = "pokemon-card";
+        card.innerHTML = `<img src="${hero.imagem}" alt="${hero.nome}"><h3>${hero.nome}</h3>`;
+        card.onclick = () => {
+          if (selected.length < 2 && !selected.includes(hero)) {
+            selected.push(JSON.parse(JSON.stringify(hero)));
+            card.classList.add("selected");
+            if (selected.length === 1) {
+              document.querySelector("h2").textContent = "Jogador 2, escolha seu herói";
+            }
+            if (selected.length === 2) {
+              startBattleBtn.disabled = false;
+            }
+          }
+        };
+        selectionArea.appendChild(card);
+      });
+    }
+
+    startBattleBtn.onclick = () => {
+      startBattle();
+    };
+
+    function startBattle() {
+      document.querySelector("h1").style.display = "none";
+      document.querySelector("h2").style.display = "none";
+      selectionArea.style.display = "none";
+      startBattleBtn.style.display = "none";
+      battleScreen.style.display = "block";
+      loadBattle();
+    }
+
+    function loadBattle() {
+      const p1 = selected[0];
+      const p2 = selected[1];
+
+      document.getElementById("player1-name").textContent = p1.nome;
+      document.getElementById("player1-img").src = p1.imagem;
+      document.getElementById("player1-hp-bar").style.width = p1.hp + "px";
+      document.getElementById("player1-hp-text").textContent = `HP: ${p1.hp}`;
+
+      document.getElementById("player2-name").textContent = p2.nome;
+      document.getElementById("player2-img").src = p2.imagem;
+      document.getElementById("player2-hp-bar").style.width = p2.hp + "px";
+      document.getElementById("player2-hp-text").textContent = `HP: ${p2.hp}`;
+
+      renderAttacks();
+    }
+
+    // Função para mostrar o dano animado
+    function mostrarDano(targetCard, dano) {
+      const danoElemento = document.createElement("div");
+      danoElemento.classList.add("dano");
+      danoElemento.textContent = `-${dano}`;
+      targetCard.appendChild(danoElemento);
+      setTimeout(() => {
+        danoElemento.remove();
+      }, 1500);
+    }
+
+    function renderAttacks() {
+      const area = document.getElementById("attack-buttons");
+      area.innerHTML = "";
+
+      const current = selected[vez - 1];
+      const target = selected[vez % 2];
+      const targetCard = document.getElementById(`player${(vez % 2) + 1}-card`);
+
+      area.innerHTML = `<h3>Vez do Jogador ${vez}</h3>`;
+      current.ataques.forEach(atk => {
+        const btn = document.createElement("button");
+        btn.textContent = atk.nome;
+        btn.onclick = () => {
+          target.hp -= atk.dano;
+          if (target.hp < 0) target.hp = 0;
+
+          document.getElementById(`player${(vez % 2) + 1}-hp-bar`).style.width = target.hp + "px";
+          document.getElementById(`player${(vez % 2) + 1}-hp-text`).textContent = `HP: ${target.hp}`;
+
+          mostrarDano(targetCard, atk.dano);
+
+          if (target.hp === 0) {
+            area.innerHTML = `<h2>Jogador ${vez} venceu!</h2>`;
+          } else {
+            vez = vez === 1 ? 2 : 1;
+            renderAttacks();
+          }
+        };
+        area.appendChild(btn);
+      });
+    }
+
+    renderHeroSelection();
+  </script>
+</body>
+</html>
